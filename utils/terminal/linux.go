@@ -9,16 +9,18 @@ type linuxTerminal struct {
 	Platform string
 }
 
-func newLinuxTerminal() Terminal {
+func newLinuxTerminal() terminal {
 	return linuxTerminal{
 		Platform: "linux",
 	}
 }
 
+// !! NOT IMPLEMENTED
 func (t linuxTerminal) getSize() (int, int, error) {
 	return 0, 0, nil
 }
 
+// !! NOT IMPLEMENTED
 func (t linuxTerminal) setSize(w int, h int) error {
 	return nil
 }

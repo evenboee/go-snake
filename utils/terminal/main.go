@@ -4,31 +4,42 @@ import (
 	"runtime"
 )
 
-type Terminal interface {
+type terminal interface {
+	// clear clears the terminal
 	clear()
+
+	// getSize returns the size of the terminal
 	getSize() (int, int, error)
+
+	// setSize sets the size of the terminal
 	setSize(w int, h int) error
 }
 
-var terminal Terminal
+var term terminal
 
+// initialize terminal variable based on OS
 func init() {
-
 	if runtime.GOOS == "windows" {
-		terminal = newWindowsTerminal()
+		term = newWindowsTerminal()
 	} else {
-		terminal = newLinuxTerminal()
+		term = newLinuxTerminal()
 	}
 }
 
+// !! NOT IMPLEMENTED
+// GetSize returns the size of the console
 func GetSize() (int, int, error) {
-	return terminal.getSize()
+	return term.getSize()
 }
 
+// !! NOT IMPLEMENTED
+// SetSize sets the size of the console
 func SetSize(w int, h int) error {
-	return terminal.setSize(w, h)
+	return term.setSize(w, h)
 }
 
+// Clear the console
+// NOTE: Time consuming (tested to be 30ms)
 func Clear() {
-	terminal.clear()
+	term.clear()
 }
