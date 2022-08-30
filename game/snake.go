@@ -5,23 +5,23 @@ import (
 )
 
 type snake struct {
-	head Position
-	tail []Position
+	head position
+	tail []position
 
-	dir Position
+	dir position
 }
 
 func newSnake() snake {
 	return snake{
-		head: NewPosition(1, 0),
-		tail: []Position{
-			NewPosition(0, 0),
+		head: newPosition(1, 0),
+		tail: []position{
+			newPosition(0, 0),
 		},
-		dir: NewPosition(1, 1),
+		dir: newPosition(1, 1),
 	}
 }
 
 func (s *snake) step() {
 	s.tail, _ = utils.ShiftIn(s.tail, s.head)
-	s.head.Add(s.dir)
+	s.head.add(s.dir)
 }

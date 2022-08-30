@@ -5,25 +5,25 @@ import (
 	"os/exec"
 )
 
-type LinuxTerminal struct {
+type linuxTerminal struct {
 	Platform string
 }
 
-func NewLinuxTerminal() Terminal {
-	return LinuxTerminal{
+func newLinuxTerminal() Terminal {
+	return linuxTerminal{
 		Platform: "linux",
 	}
 }
 
-func (t LinuxTerminal) getSize() (int, int, error) {
+func (t linuxTerminal) getSize() (int, int, error) {
 	return 0, 0, nil
 }
 
-func (t LinuxTerminal) setSize(w int, h int) error {
+func (t linuxTerminal) setSize(w int, h int) error {
 	return nil
 }
 
-func (t LinuxTerminal) clear() {
+func (t linuxTerminal) clear() {
 	cmd := exec.Command("clear") //Linux example, its tested
 	cmd.Stdout = os.Stdout
 	cmd.Run()

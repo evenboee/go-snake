@@ -16,7 +16,7 @@ func init() {
 
 type Game struct {
 	snake  snake
-	food   Position
+	food   position
 	width  int
 	height int
 	debug  bool
@@ -35,11 +35,11 @@ func NewGame(debug bool) Game {
 	return game
 }
 
-func (game *Game) getRandomFoodSpot() Position {
-	pos := NewRandomPosition(game.width, game.height)
+func (game *Game) getRandomFoodSpot() position {
+	pos := newRandomPosition(game.width, game.height)
 
-	for game.snake.head.Equals(pos) || utils.Any(game.snake.tail, func(p Position) bool { return p.Equals(pos) }) {
-		pos = NewRandomPosition(game.width, game.height)
+	for game.snake.head.equals(pos) || utils.Any(game.snake.tail, func(p position) bool { return p.equals(pos) }) {
+		pos = newRandomPosition(game.width, game.height)
 	}
 
 	return pos

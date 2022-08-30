@@ -15,9 +15,9 @@ var terminal Terminal
 func init() {
 
 	if runtime.GOOS == "windows" {
-		terminal = NewWindowsTerminal()
+		terminal = newWindowsTerminal()
 	} else {
-		terminal = NewLinuxTerminal()
+		terminal = newLinuxTerminal()
 	}
 }
 
