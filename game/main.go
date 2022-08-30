@@ -51,6 +51,10 @@ func (game *Game) step() bool {
 	return game.snake.head.X >= game.width || game.snake.head.Y >= game.height
 }
 
+func (game *Game) posTo1d(pos position) int {
+	return pos.Y*game.width + pos.X
+}
+
 func (game *Game) draw() {
 	board := make([]uint8, game.width*game.height)
 
@@ -61,11 +65,13 @@ func (game *Game) draw() {
 	// 4 => food
 
 	snakeDrawTime := utilTime.Timer(func() {
-		board[game.snake.head.Y*game.width+game.snake.head.X] = 2
+		board[game.posTo1d(game.snake.head)] = 2
 		for _, v := range game.snake.tail {
-			board[v.Y*game.width+v.X] = 3
+			board[game.posTo1d(v)] = 3
 		}
 	})
+
+	board[game.posTo1d(game.food)] = 4
 
 	var sb strings.Builder
 
