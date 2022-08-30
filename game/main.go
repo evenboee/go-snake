@@ -138,7 +138,14 @@ func (game *Game) draw() {
 
 func (game *Game) tick(quit chan bool) {
 	elapsed := utilTime.Timer(func() {
-		finished := game.step()
+		finished := false
+		stepTime := utilTime.Timer(func() {
+			finished = game.step()
+		})
+		if game.debug {
+			fmt.Println("Step time:", stepTime)
+		}
+
 		if !finished {
 			drawTime := utilTime.Timer(func() {
 				game.draw()
@@ -152,7 +159,7 @@ func (game *Game) tick(quit chan bool) {
 	})
 
 	if game.debug {
-		fmt.Println("Time:", elapsed)
+		fmt.Println("Loop time:", elapsed)
 	}
 }
 
