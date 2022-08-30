@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/evenboee/go-snake/game"
@@ -9,10 +8,8 @@ import (
 )
 
 func main() {
-	fmt.Println("Snake")
-
 	terminal.Clear()
 
-	myGame := game.NewGame()
+	myGame := game.NewGame(true)
 	myGame.Run(200 * time.Millisecond)
 }

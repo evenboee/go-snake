@@ -2,8 +2,10 @@ package game
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/evenboee/go-snake/utils"
 	"github.com/evenboee/go-snake/utils/terminal"
 	utilTime "github.com/evenboee/go-snake/utils/time"
 )
@@ -13,59 +15,139 @@ func init() {
 }
 
 type Game struct {
-	pos    Position
-	dir    Position
+	snake  snake
+	food   Position
 	width  int
 	height int
+	debug  bool
 }
 
-func NewGame() Game {
-	return Game{
-		pos:    NewPosition(0, 0),
-		dir:    NewPosition(1, 1),
-		width:  20,
-		height: 10,
+func NewGame(debug bool) Game {
+	game := Game{
+		snake:  newSnake(),
+		width:  9,
+		height: 9,
+		debug:  debug,
 	}
+
+	game.food = game.getRandomFoodSpot()
+
+	return game
+}
+
+func (game *Game) getRandomFoodSpot() Position {
+	pos := NewRandomPosition(game.width, game.height)
+
+	for game.snake.head.Equals(pos) || utils.Any(game.snake.tail, func(p Position) bool { return p.Equals(pos) }) {
+		pos = NewRandomPosition(game.width, game.height)
+	}
+
+	return pos
 }
 
 func (game *Game) step() bool {
-	game.pos.Add(game.dir)
-	return game.pos.X >= game.width || game.pos.Y >= game.height
+	game.snake.step()
+	// fmt.Println(game.snake.head)
+	return game.snake.head.X >= game.width || game.snake.head.Y >= game.height
 }
 
 func (game *Game) draw() {
-	terminal.Clear()
+	board := make([]uint8, game.width*game.height)
 
-	fmt.Print("+")
-	for i := 0; i < game.width; i++ {
-		fmt.Print("-")
-	}
-	fmt.Println("+")
+	// 0 => nothing
+	// 1 => wall
+	// 2 => snake head
+	// 3 => snake tail
+	// 4 => food
 
-	for y := 0; y < game.height; y++ {
-		fmt.Print("|")
-
-		for x := 0; x < game.width; x++ {
-			if game.pos.X == x && game.pos.Y == y {
-				fmt.Print("S")
-			} else {
-				fmt.Print(" ")
-			}
+	snakeDrawTime := utilTime.Timer(func() {
+		board[game.snake.head.Y*game.width+game.snake.head.X] = 2
+		for _, v := range game.snake.tail {
+			board[v.Y*game.width+v.X] = 3
 		}
+	})
 
-		fmt.Println("|")
-	}
+	var sb strings.Builder
 
-	fmt.Print("+")
-	for i := 0; i < game.width; i++ {
-		fmt.Print("-")
+	firstLineDrawTime := utilTime.Timer(func() {
+		sb.WriteString("+")
+		for i := 0; i < game.width; i++ {
+			sb.WriteString("--")
+		}
+		sb.WriteString("+")
+	})
+
+	mainBoardDrawTime := utilTime.Timer(func() {
+		for i, v := range board {
+			if i%game.width == 0 {
+				if i == 0 {
+					sb.WriteString("\n|")
+				} else {
+					sb.WriteString("|\n|")
+				}
+			}
+
+			tbw := "  "
+
+			switch v {
+			case 1:
+				tbw = "X "
+			case 2:
+				tbw = "H "
+			case 3:
+				tbw = "T "
+			case 4:
+				tbw = "F "
+			}
+
+			sb.WriteString(tbw)
+
+			// sb.WriteString(fmt.Sprintf("%d", int(i/game.width)) + fmt.Sprintf("%d", i%game.width)) // Debug. Prints cords (XY). Comment out above switch
+		}
+	})
+
+	lastLineDrawTime := utilTime.Timer(func() {
+		sb.WriteString("|\n")
+		sb.WriteString("+")
+		for i := 0; i < game.width; i++ {
+			sb.WriteString("--")
+		}
+		sb.WriteString("+")
+	})
+
+	clearTerminalTime := utilTime.Timer(func() {
+		terminal.Clear()
+	})
+
+	fmt.Println(sb.String())
+
+	if game.debug {
+		fmt.Println("Main board draw time:", mainBoardDrawTime)
+		fmt.Println("Snake draw time:", snakeDrawTime)
+		fmt.Println("First line draw time:", firstLineDrawTime)
+		fmt.Println("Last line draw time:", lastLineDrawTime)
+		fmt.Println("Clear terminal time:", clearTerminalTime)
 	}
-	fmt.Println("+")
 }
 
 func (game *Game) tick(quit chan bool) {
-	quit <- game.step()
-	game.draw()
+	elapsed := utilTime.Timer(func() {
+		finished := game.step()
+		if !finished {
+			drawTime := utilTime.Timer(func() {
+				game.draw()
+			})
+
+			if game.debug {
+				fmt.Println("Draw time:", drawTime)
+			}
+		}
+		quit <- finished
+	})
+
+	if game.debug {
+		fmt.Println("Time:", elapsed)
+	}
 }
 
 func (game *Game) Run(speed time.Duration) {
