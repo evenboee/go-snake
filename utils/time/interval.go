@@ -8,7 +8,7 @@ func SetInterval(f func(chan bool), duration time.Duration) {
 	go func() {
 		for {
 			time.Sleep(duration)
-			f(quit)
+			go f(quit)
 		}
 	}()
 
