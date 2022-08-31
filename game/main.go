@@ -45,10 +45,21 @@ func (game *Game) getRandomFoodSpot() position {
 	return pos
 }
 
+func (game *Game) checkSnakeDead() bool {
+	return game.snake.head.X >= game.width || game.snake.head.Y >= game.height || utils.Any(game.snake.tail, func(p position) bool { return p.equals(game.snake.head) })
+}
+
 func (game *Game) step() bool {
-	game.snake.step()
+	removeTip := false
+
+	if game.snake.head.equals(game.food) {
+		game.food = game.getRandomFoodSpot()
+		removeTip = true
+	}
+
+	game.snake.step(removeTip)
 	// fmt.Println(game.snake.head)
-	return game.snake.head.X >= game.width || game.snake.head.Y >= game.height
+	return game.checkSnakeDead()
 }
 
 func (game *Game) posTo1d(pos position) int {
@@ -164,5 +175,6 @@ func (game *Game) tick(quit chan bool) {
 }
 
 func (game *Game) Run(speed time.Duration) {
+	game.draw()
 	utilTime.SetInterval(game.tick, speed)
 }

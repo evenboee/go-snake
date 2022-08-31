@@ -21,7 +21,11 @@ func newSnake() snake {
 	}
 }
 
-func (s *snake) step() {
-	s.tail, _ = utils.ShiftIn(s.tail, s.head)
+func (s *snake) step(remove bool) {
+	if remove {
+		s.tail = append(s.tail, s.head)
+	} else {
+		s.tail, _ = utils.ShiftIn(s.tail, s.head)
+	}
 	s.head.add(s.dir)
 }
