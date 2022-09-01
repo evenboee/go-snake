@@ -17,7 +17,7 @@ func newSnake() snake {
 		tail: []position{
 			newPosition(0, 0),
 		},
-		dir: newPosition(1, 1),
+		dir: newPosition(1, 0),
 	}
 }
 
