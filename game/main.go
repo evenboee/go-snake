@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -15,19 +16,21 @@ func init() {
 }
 
 type Game struct {
-	snake  snake
-	food   position
-	width  int
-	height int
-	debug  bool
+	snake    snake
+	food     position
+	width    int
+	height   int
+	debug    bool
+	keyQueue []position
 }
 
 func NewGame(debug bool) Game {
 	game := Game{
-		snake:  newSnake(),
-		width:  9,
-		height: 9,
-		debug:  debug,
+		snake:    newSnake(),
+		width:    9,
+		height:   9,
+		debug:    debug,
+		keyQueue: []position{},
 	}
 
 	game.food = game.getRandomFoodSpot()
@@ -46,10 +49,35 @@ func (game *Game) getRandomFoodSpot() position {
 }
 
 func (game *Game) checkSnakeDead() bool {
-	return game.snake.head.X >= game.width || game.snake.head.Y >= game.height || utils.Any(game.snake.tail, func(p position) bool { return p.equals(game.snake.head) })
+	return game.snake.head.X >= game.width ||
+		game.snake.head.X < 0 ||
+		game.snake.head.Y >= game.height ||
+		game.snake.head.Y < 0 ||
+		utils.Any(game.snake.tail, func(p position) bool { return p.equals(game.snake.head) })
+}
+
+func (game *Game) handleKeyboardInput(event utils.KeyEvent) bool {
+	switch event.Key {
+	case utils.KeyUp:
+		game.keyQueue = append(game.keyQueue, newPosition(0, -1))
+	case utils.KeyRight:
+		game.keyQueue = append(game.keyQueue, newPosition(1, 0))
+	case utils.KeyDown:
+		game.keyQueue = append(game.keyQueue, newPosition(0, 1))
+	case utils.KeyLeft:
+		game.keyQueue = append(game.keyQueue, newPosition(-1, 0))
+	}
+
+	return false
 }
 
 func (game *Game) step() bool {
+	if len(game.keyQueue) != 0 {
+		var nDir position
+		game.keyQueue, nDir = utils.Shift(game.keyQueue)
+		game.snake.dir = nDir
+	}
+
 	removeTip := false
 
 	if game.snake.head.equals(game.food) {
@@ -133,10 +161,11 @@ func (game *Game) draw() {
 	})
 
 	clearTerminalTime := utilTime.Timer(func() {
-		terminal.Clear()
+		terminal.MoveTopLeft()
 	})
 
 	fmt.Println(sb.String())
+	fmt.Println("Score:", len(game.snake.tail)-1)
 
 	if game.debug {
 		fmt.Println("Main board draw time:", mainBoardDrawTime)
@@ -175,6 +204,16 @@ func (game *Game) tick(quit chan bool) {
 }
 
 func (game *Game) Run(speed time.Duration) {
+	terminal.Clear()
 	game.draw()
+
+	defer func() {
+		if runtime.GOOS != "windows" { // TODO: Fix a way to also close keyboard on windows
+			utils.CloseKeyboard()
+		}
+	}()
+
+	go utils.KeyBoardListen(game.handleKeyboardInput)
+
 	utilTime.SetInterval(game.tick, speed)
 }
