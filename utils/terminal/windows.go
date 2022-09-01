@@ -1,32 +1,101 @@
+//go:build windows
+// +build windows
+
 package terminal
 
 import (
 	"os"
-	"os/exec"
+	"syscall"
+	"unsafe"
 )
 
-type windowsTerminal struct {
-	Platform string
+// Clear and MoveTopLeft taken from: https://github.com/inancgumus/screen/blob/master/clear_windows.go
+
+// Clear clears the screen
+func Clear() {
+	var (
+		cursor coord
+		w      dword
+		h      = getScreen()
+	)
+
+	total := dword(h.size.x * h.size.y)
+
+	xFillConsoleOutputCharacter.Call(
+		uintptr(h.handle),
+		uintptr(' '),
+		uintptr(total),
+		*(*uintptr)(unsafe.Pointer(&cursor)),
+		uintptr(unsafe.Pointer(&w)),
+	)
+
+	xFillConsoleOutputAttribute.Call(
+		uintptr(h.handle),
+		uintptr(h.attributes),
+		uintptr(total), *(*uintptr)(unsafe.Pointer(&cursor)),
+		uintptr(unsafe.Pointer(&w)),
+	)
 }
 
-func newWindowsTerminal() terminal {
-	return windowsTerminal{
-		Platform: "windows",
+// MoveTopLeft moves the cursor to the top left position of the screen
+func MoveTopLeft() {
+	h := getScreen()
+
+	xSetConsoleCursorPosition.Call(
+		uintptr(h.handle),
+		*(*uintptr)(unsafe.Pointer(&coord{})),
+	)
+}
+
+func getScreen() consoleScreenBufferInfoHandle {
+	h := consoleScreenBufferInfoHandle{
+		handle: syscall.Handle(os.Stdout.Fd()),
 	}
+
+	xGetConsoleScreenBufferInfo.Call(
+		uintptr(h.handle),
+		uintptr(unsafe.Pointer(&h.consoleScreenBufferInfo)),
+	)
+
+	return h
 }
 
-// !! NOT IMPLEMENTED
-func (t windowsTerminal) getSize() (int, int, error) {
-	return 0, 0, nil
+var (
+	kernel32                    = syscall.NewLazyDLL("kernel32.dll")
+	xGetConsoleScreenBufferInfo = kernel32.NewProc("GetConsoleScreenBufferInfo")
+	xSetConsoleCursorPosition   = kernel32.NewProc("SetConsoleCursorPosition")
+	xFillConsoleOutputCharacter = kernel32.NewProc("FillConsoleOutputCharacterW")
+	xFillConsoleOutputAttribute = kernel32.NewProc("FillConsoleOutputAttribute")
+)
+
+type (
+	wchar uint16
+	short int16
+	dword uint32
+	word  uint16
+)
+
+type coord struct {
+	x short
+	y short
 }
 
-// !! NOT IMPLEMENTED
-func (t windowsTerminal) setSize(w int, h int) error {
-	return nil
+type smallRect struct {
+	left   short
+	top    short
+	right  short
+	bottom short
 }
 
-func (t windowsTerminal) clear() {
-	cmd := exec.Command("cmd", "/c", "cls")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
+type consoleScreenBufferInfo struct {
+	size              coord
+	cursorPosition    coord
+	attributes        word
+	window            smallRect
+	maximumWindowSize coord
+}
+
+type consoleScreenBufferInfoHandle struct {
+	handle syscall.Handle
+	consoleScreenBufferInfo
 }
